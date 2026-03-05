@@ -1,12 +1,47 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import Navbar from "@/components/Navbar";
+import Hero from "@/components/Hero";
+import Sobre from "@/components/Sobre";
+import Trajetoria from "@/components/Trajetoria";
+import MissaoVisaoValores from "@/components/MissaoVisaoValores";
+import Footer from "@/components/Footer";
+import { useSiteConfig } from "@/hooks/useSiteConfig";
 
 const Index = () => {
+  const { config } = useSiteConfig();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Navbar items={config.navbar} />
+      <Hero
+        name={config.identity.name}
+        subtitle={config.identity.subtitle}
+        crp={config.identity.crp}
+        description={config.hero.description}
+      />
+      <Sobre
+        card1Title={config.sobre.card1Title}
+        card1Text={config.sobre.card1Text}
+        card2Title={config.sobre.card2Title}
+        card2Text={config.sobre.card2Text}
+      />
+      <Trajetoria
+        aulas={config.trajetoria.aulas}
+        palestras={config.trajetoria.palestras}
+        publicacoes={config.trajetoria.publicacoes}
+        experiencias={config.trajetoria.experiencias}
+      />
+      <MissaoVisaoValores
+        missao={config.missaoVisaoValores.missao}
+        visao={config.missaoVisaoValores.visao}
+        valores={config.missaoVisaoValores.valores}
+      />
+      <Footer
+        email={config.contato.email}
+        telefone={config.contato.telefone}
+        instagram={config.contato.instagram}
+        linkedin={config.contato.linkedin}
+        name={config.identity.name}
+      />
     </div>
   );
 };
