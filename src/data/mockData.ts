@@ -1,3 +1,13 @@
+export interface SiteColors {
+  primary: string;
+  secondary: string;
+  accent: string;
+  background: string;
+  foreground: string;
+  card: string;
+  cardForeground: string;
+}
+
 export interface SiteConfig {
   identity: {
     name: string;
@@ -7,6 +17,7 @@ export interface SiteConfig {
   hero: {
     description: string;
   };
+  customPhoto: string;
   sobre: {
     card1Title: string;
     card1Text: string;
@@ -31,7 +42,18 @@ export interface SiteConfig {
     linkedin: string;
   };
   navbar: string[];
+  colors: SiteColors;
 }
+
+export const defaultColors: SiteColors = {
+  primary: "270 28% 55%",
+  secondary: "270 30% 74%",
+  accent: "155 30% 88%",
+  background: "280 20% 96%",
+  foreground: "0 0% 37%",
+  card: "0 0% 100%",
+  cardForeground: "0 0% 37%",
+};
 
 export const defaultConfig: SiteConfig = {
   identity: {
@@ -39,6 +61,7 @@ export const defaultConfig: SiteConfig = {
     subtitle: "Psicóloga",
     crp: "CRP 00/00000",
   },
+  customPhoto: "",
   hero: {
     description:
       "Sou psicóloga, com atuação voltada à psicologia da saúde, cuidado em doenças crônicas, raras e oncológicas, e ao acompanhamento de pacientes, familiares e profissionais que enfrentam desafios importantes em contextos de adoecimento, tratamento e mudanças significativas de vida.",
@@ -99,4 +122,5 @@ export const defaultConfig: SiteConfig = {
     "Conteúdos",
     "Contato",
   ],
+  colors: { ...defaultColors },
 };

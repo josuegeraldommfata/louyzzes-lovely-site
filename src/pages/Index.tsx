@@ -17,6 +17,7 @@ const Index = () => {
         subtitle={config.identity.subtitle}
         crp={config.identity.crp}
         description={config.hero.description}
+        customPhoto={config.customPhoto || undefined}
       />
       <Sobre
         card1Title={config.sobre.card1Title}
