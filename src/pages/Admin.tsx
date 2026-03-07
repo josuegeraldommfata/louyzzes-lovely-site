@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useSiteConfig } from "@/hooks/useSiteConfig";
-import { SiteConfig } from "@/data/mockData";
-import { LogOut, Save, RotateCcw, Eye } from "lucide-react";
+import { SiteConfig, SiteColors, defaultColors } from "@/data/mockData";
+import { LogOut, RotateCcw, Eye, Upload, Image } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,11 @@ export default function Admin() {
   const [pass, setPass] = useState("");
   const [loginError, setLoginError] = useState("");
 
+  const handleLogin = () => {
+    if (user === "admin" && pass === "admin123") setAuthenticated(true);
+    else setLoginError("Credenciais inválidas");
+  };
+
   if (!authenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -20,32 +25,15 @@ export default function Admin() {
           <h2 className="font-heading text-2xl text-primary mb-6 text-center">Painel Admin</h2>
           {loginError && <p className="text-destructive text-sm mb-4 text-center">{loginError}</p>}
           <div className="space-y-4">
-            <Input
-              placeholder="Usuário"
-              value={user}
-              onChange={(e) => setUser(e.target.value)}
-            />
+            <Input placeholder="Usuário" value={user} onChange={(e) => setUser(e.target.value)} />
             <Input
               type="password"
               placeholder="Senha"
               value={pass}
               onChange={(e) => setPass(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  if (user === "admin" && pass === "admin123") setAuthenticated(true);
-                  else setLoginError("Credenciais inválidas");
-                }
-              }}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
             />
-            <Button
-              className="w-full"
-              onClick={() => {
-                if (user === "admin" && pass === "admin123") setAuthenticated(true);
-                else setLoginError("Credenciais inválidas");
-              }}
-            >
-              Entrar
-            </Button>
+            <Button className="w-full" onClick={handleLogin}>Entrar</Button>
           </div>
         </div>
       </div>
@@ -55,53 +43,96 @@ export default function Admin() {
   return <AdminDashboard onLogout={() => setAuthenticated(false)} />;
 }
 
+// --- Color picker helper ---
+function hslToHex(hslStr: string): string {
+  const parts = hslStr.trim().split(/\s+/);
+  if (parts.length < 3) return "#8e6fae";
+  const h = parseFloat(parts[0]);
+  const s = parseFloat(parts[1]) / 100;
+  const l = parseFloat(parts[2]) / 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function hexToHsl(hex: string): string {
+  let r = parseInt(hex.slice(1, 3), 16) / 255;
+  let g = parseInt(hex.slice(3, 5), 16) / 255;
+  let b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) * 60; break;
+      case g: h = ((b - r) / d + 2) * 60; break;
+      case b: h = ((r - g) / d + 4) * 60; break;
+    }
+  }
+  return `${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
+
+// --- Dashboard ---
 function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const { config, updateConfig, resetConfig } = useSiteConfig();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"identity" | "hero" | "sobre" | "trajetoria" | "missao" | "contato" | "navbar">("identity");
+  const [tab, setTab] = useState<string>("identity");
 
   const tabs = [
-    { id: "identity" as const, label: "Identidade" },
-    { id: "hero" as const, label: "Hero" },
-    { id: "sobre" as const, label: "Sobre Mim" },
-    { id: "trajetoria" as const, label: "Trajetória" },
-    { id: "missao" as const, label: "Missão/Visão/Valores" },
-    { id: "contato" as const, label: "Contato" },
-    { id: "navbar" as const, label: "Navbar" },
+    { id: "identity", label: "Identidade" },
+    { id: "hero", label: "Hero" },
+    { id: "photo", label: "Foto" },
+    { id: "sobre", label: "Sobre Mim" },
+    { id: "trajetoria", label: "Trajetória" },
+    { id: "missao", label: "Missão/Visão/Valores" },
+    { id: "contato", label: "Contato" },
+    { id: "navbar", label: "Navbar" },
+    { id: "colors", label: "🎨 Cores" },
   ];
 
   const updateNested = <K extends keyof SiteConfig>(
     section: K,
-    field: keyof SiteConfig[K],
-    value: SiteConfig[K][keyof SiteConfig[K]]
+    field: string,
+    value: unknown
   ) => {
-    updateConfig({ [section]: { ...config[section], [field]: value } } as Partial<SiteConfig>);
+    const current = config[section];
+    if (typeof current === "object" && current !== null && !Array.isArray(current)) {
+      updateConfig({ [section]: { ...(current as Record<string, unknown>), [field]: value } } as Partial<SiteConfig>);
+    }
   };
 
   const updateArrayItem = <K extends keyof SiteConfig>(
     section: K,
-    field: keyof SiteConfig[K],
+    field: string,
     index: number,
     value: string
   ) => {
-    const arr = [...(config[section][field] as string[])];
+    const current = config[section] as Record<string, unknown>;
+    const arr = [...(current[field] as string[])];
     arr[index] = value;
-    updateConfig({ [section]: { ...config[section], [field]: arr } } as Partial<SiteConfig>);
+    updateConfig({ [section]: { ...current, [field]: arr } } as Partial<SiteConfig>);
   };
 
-  const addArrayItem = <K extends keyof SiteConfig>(section: K, field: keyof SiteConfig[K]) => {
-    const arr = [...(config[section][field] as string[]), ""];
-    updateConfig({ [section]: { ...config[section], [field]: arr } } as Partial<SiteConfig>);
+  const addArrayItem = <K extends keyof SiteConfig>(section: K, field: string) => {
+    const current = config[section] as Record<string, unknown>;
+    const arr = [...(current[field] as string[]), ""];
+    updateConfig({ [section]: { ...current, [field]: arr } } as Partial<SiteConfig>);
   };
 
-  const removeArrayItem = <K extends keyof SiteConfig>(section: K, field: keyof SiteConfig[K], index: number) => {
-    const arr = (config[section][field] as string[]).filter((_, i) => i !== index);
-    updateConfig({ [section]: { ...config[section], [field]: arr } } as Partial<SiteConfig>);
+  const removeArrayItem = <K extends keyof SiteConfig>(section: K, field: string, index: number) => {
+    const current = config[section] as Record<string, unknown>;
+    const arr = (current[field] as string[]).filter((_, i) => i !== index);
+    updateConfig({ [section]: { ...current, [field]: arr } } as Partial<SiteConfig>);
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="bg-card border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
           <h1 className="font-heading text-lg text-primary font-semibold">Painel Admin</h1>
@@ -120,7 +151,6 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-8">
           {tabs.map((t) => (
             <button
@@ -135,7 +165,6 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           ))}
         </div>
 
-        {/* Content */}
         <div className="card-elevated max-w-3xl">
           {tab === "identity" && (
             <div className="space-y-4">
@@ -152,6 +181,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <FieldTextarea label="Descrição" value={config.hero.description} onChange={(v) => updateNested("hero", "description", v)} />
             </div>
           )}
+
+          {tab === "photo" && <PhotoTab config={config} updateConfig={updateConfig} />}
 
           {tab === "sobre" && (
             <div className="space-y-4">
@@ -171,11 +202,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   <label className="font-body text-sm font-semibold text-foreground mb-2 block capitalize">{field}</label>
                   {config.trajetoria[field].map((item, i) => (
                     <div key={i} className="flex gap-2 mb-2">
-                      <Input
-                        value={item}
-                        onChange={(e) => updateArrayItem("trajetoria", field, i, e.target.value)}
-                        className="flex-1"
-                      />
+                      <Input value={item} onChange={(e) => updateArrayItem("trajetoria", field, i, e.target.value)} className="flex-1" />
                       <Button variant="outline" size="sm" onClick={() => removeArrayItem("trajetoria", field, i)}>✕</Button>
                     </div>
                   ))}
@@ -194,11 +221,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <label className="font-body text-sm font-semibold text-foreground mb-2 block">Valores</label>
                 {config.missaoVisaoValores.valores.map((v, i) => (
                   <div key={i} className="flex gap-2 mb-2">
-                    <Input
-                      value={v}
-                      onChange={(e) => updateArrayItem("missaoVisaoValores", "valores", i, e.target.value)}
-                      className="flex-1"
-                    />
+                    <Input value={v} onChange={(e) => updateArrayItem("missaoVisaoValores", "valores", i, e.target.value)} className="flex-1" />
                     <Button variant="outline" size="sm" onClick={() => removeArrayItem("missaoVisaoValores", "valores", i)}>✕</Button>
                   </div>
                 ))}
@@ -231,26 +254,106 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     }}
                     className="flex-1"
                   />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => updateConfig({ navbar: config.navbar.filter((_, idx) => idx !== i) })}
-                  >
-                    ✕
-                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => updateConfig({ navbar: config.navbar.filter((_, idx) => idx !== i) })}>✕</Button>
                 </div>
               ))}
-              <Button variant="outline" size="sm" onClick={() => updateConfig({ navbar: [...config.navbar, "Novo Item"] })}>
-                + Adicionar
-              </Button>
+              <Button variant="outline" size="sm" onClick={() => updateConfig({ navbar: [...config.navbar, "Novo Item"] })}>+ Adicionar</Button>
             </div>
           )}
+
+          {tab === "colors" && <ColorsTab config={config} updateConfig={updateConfig} />}
         </div>
       </div>
     </div>
   );
 }
 
+// --- Photo Tab ---
+function PhotoTab({ config, updateConfig }: { config: SiteConfig; updateConfig: (p: Partial<SiteConfig>) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateConfig({ customPhoto: reader.result as string });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="space-y-6">
+      <h3 className="font-heading text-xl text-primary mb-4">Foto da Psicóloga</h3>
+      
+      {config.customPhoto && (
+        <div className="w-48 h-60 rounded-xl overflow-hidden shadow-md mx-auto">
+          <img src={config.customPhoto} alt="Preview" className="w-full h-full object-cover" />
+        </div>
+      )}
+
+      <div className="flex gap-3 justify-center">
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+        <Button onClick={() => fileRef.current?.click()}>
+          <Upload size={16} className="mr-2" /> Enviar Foto
+        </Button>
+        {config.customPhoto && (
+          <Button variant="outline" onClick={() => updateConfig({ customPhoto: "" })}>
+            <Image size={16} className="mr-2" /> Usar Padrão
+          </Button>
+        )}
+      </div>
+      <p className="text-muted-foreground text-xs text-center">A foto será salva localmente no navegador.</p>
+    </div>
+  );
+}
+
+// --- Colors Tab ---
+function ColorsTab({ config, updateConfig }: { config: SiteConfig; updateConfig: (p: Partial<SiteConfig>) => void }) {
+  const colors = config.colors || defaultColors;
+
+  const colorFields: { key: keyof SiteColors; label: string }[] = [
+    { key: "primary", label: "Roxo Principal" },
+    { key: "secondary", label: "Roxo Claro / Secundário" },
+    { key: "accent", label: "Verde Suave / Destaque" },
+    { key: "background", label: "Fundo do Site" },
+    { key: "foreground", label: "Cor do Texto" },
+    { key: "card", label: "Fundo dos Cards" },
+    { key: "cardForeground", label: "Texto dos Cards" },
+  ];
+
+  const updateColor = (key: keyof SiteColors, hex: string) => {
+    const hsl = hexToHsl(hex);
+    updateConfig({ colors: { ...colors, [key]: hsl } });
+  };
+
+  return (
+    <div className="space-y-6">
+      <h3 className="font-heading text-xl text-primary mb-4">🎨 Personalizar Cores</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {colorFields.map(({ key, label }) => (
+          <div key={key} className="flex items-center gap-3">
+            <input
+              type="color"
+              value={hslToHex(colors[key])}
+              onChange={(e) => updateColor(key, e.target.value)}
+              className="w-10 h-10 rounded-lg border border-border cursor-pointer"
+            />
+            <div>
+              <p className="font-body text-sm font-semibold text-foreground">{label}</p>
+              <p className="font-body text-xs text-muted-foreground">{hslToHex(colors[key])}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <Button variant="outline" size="sm" onClick={() => updateConfig({ colors: { ...defaultColors } })}>
+        <RotateCcw size={14} className="mr-1" /> Resetar Cores
+      </Button>
+    </div>
+  );
+}
+
+// --- Field helpers ---
 function FieldInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
