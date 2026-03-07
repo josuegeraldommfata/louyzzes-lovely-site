@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useSiteConfig } from "@/hooks/useSiteConfig";
-import { SiteConfig, SiteColors, defaultColors } from "@/data/mockData";
+import { SiteConfig, SiteColors, defaultColors, builtInSections, slugify, CustomSection } from "@/data/mockData";
 import { LogOut, RotateCcw, Eye, Upload, Image } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ export default function Admin() {
   return <AdminDashboard onLogout={() => setAuthenticated(false)} />;
 }
 
-// --- Color picker helper ---
+// --- Color helpers ---
 function hslToHex(hslStr: string): string {
   const parts = hslStr.trim().split(/\s+/);
   if (parts.length < 3) return "#8e6fae";
@@ -84,35 +84,34 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState<string>("identity");
 
+  // Find custom navbar items
+  const customNavItems = config.navbar.filter((item) => !builtInSections.includes(item));
+
   const tabs = [
     { id: "identity", label: "Identidade" },
     { id: "hero", label: "Hero" },
     { id: "photo", label: "Foto" },
     { id: "sobre", label: "Sobre Mim" },
+    { id: "comoAjudar", label: "Como Posso Te Ajudar" },
+    { id: "condicoes", label: "Condições Atendidas" },
+    { id: "recursos", label: "Recursos Terapêuticos" },
+    { id: "conteudos", label: "Conteúdos" },
     { id: "trajetoria", label: "Trajetória" },
     { id: "missao", label: "Missão/Visão/Valores" },
     { id: "contato", label: "Contato" },
     { id: "navbar", label: "Navbar" },
+    ...customNavItems.map((item) => ({ id: `custom-${slugify(item)}`, label: `📄 ${item}` })),
     { id: "colors", label: "🎨 Cores" },
   ];
 
-  const updateNested = <K extends keyof SiteConfig>(
-    section: K,
-    field: string,
-    value: unknown
-  ) => {
+  const updateNested = <K extends keyof SiteConfig>(section: K, field: string, value: unknown) => {
     const current = config[section];
     if (typeof current === "object" && current !== null && !Array.isArray(current)) {
       updateConfig({ [section]: { ...(current as Record<string, unknown>), [field]: value } } as Partial<SiteConfig>);
     }
   };
 
-  const updateArrayItem = <K extends keyof SiteConfig>(
-    section: K,
-    field: string,
-    index: number,
-    value: string
-  ) => {
+  const updateArrayItem = <K extends keyof SiteConfig>(section: K, field: string, index: number, value: string) => {
     const current = config[section] as Record<string, unknown>;
     const arr = [...(current[field] as string[])];
     arr[index] = value;
@@ -129,6 +128,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     const current = config[section] as Record<string, unknown>;
     const arr = (current[field] as string[]).filter((_, i) => i !== index);
     updateConfig({ [section]: { ...current, [field]: arr } } as Partial<SiteConfig>);
+  };
+
+  const updateCustomSection = (slug: string, field: keyof CustomSection, value: unknown) => {
+    const sections = { ...config.customSections };
+    const current = sections[slug] || { title: "", description: "", items: [] };
+    sections[slug] = { ...current, [field]: value };
+    updateConfig({ customSections: sections });
   };
 
   return (
@@ -194,6 +200,54 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </div>
           )}
 
+          {tab === "comoAjudar" && (
+            <SectionEditor
+              title="Como Posso Te Ajudar"
+              description={config.comoAjudar.description}
+              items={config.comoAjudar.items}
+              onDescChange={(v) => updateNested("comoAjudar", "description", v)}
+              onItemChange={(i, v) => updateArrayItem("comoAjudar", "items", i, v)}
+              onItemAdd={() => addArrayItem("comoAjudar", "items")}
+              onItemRemove={(i) => removeArrayItem("comoAjudar", "items", i)}
+            />
+          )}
+
+          {tab === "condicoes" && (
+            <SectionEditor
+              title="Condições Atendidas"
+              description={config.condicoesAtendidas.description}
+              items={config.condicoesAtendidas.items}
+              onDescChange={(v) => updateNested("condicoesAtendidas", "description", v)}
+              onItemChange={(i, v) => updateArrayItem("condicoesAtendidas", "items", i, v)}
+              onItemAdd={() => addArrayItem("condicoesAtendidas", "items")}
+              onItemRemove={(i) => removeArrayItem("condicoesAtendidas", "items", i)}
+            />
+          )}
+
+          {tab === "recursos" && (
+            <SectionEditor
+              title="Recursos Terapêuticos"
+              description={config.recursosTerapeuticos.description}
+              items={config.recursosTerapeuticos.items}
+              onDescChange={(v) => updateNested("recursosTerapeuticos", "description", v)}
+              onItemChange={(i, v) => updateArrayItem("recursosTerapeuticos", "items", i, v)}
+              onItemAdd={() => addArrayItem("recursosTerapeuticos", "items")}
+              onItemRemove={(i) => removeArrayItem("recursosTerapeuticos", "items", i)}
+            />
+          )}
+
+          {tab === "conteudos" && (
+            <SectionEditor
+              title="Conteúdos"
+              description={config.conteudos.description}
+              items={config.conteudos.items}
+              onDescChange={(v) => updateNested("conteudos", "description", v)}
+              onItemChange={(i, v) => updateArrayItem("conteudos", "items", i, v)}
+              onItemAdd={() => addArrayItem("conteudos", "items")}
+              onItemRemove={(i) => removeArrayItem("conteudos", "items", i)}
+            />
+          )}
+
           {tab === "trajetoria" && (
             <div className="space-y-6">
               <h3 className="font-heading text-xl text-primary mb-4">Trajetória</h3>
@@ -243,6 +297,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           {tab === "navbar" && (
             <div className="space-y-4">
               <h3 className="font-heading text-xl text-primary mb-4">Itens do Menu</h3>
+              <p className="text-muted-foreground text-xs mb-4">
+                Ao adicionar um novo item, uma seção será criada automaticamente no site. Edite-a na aba correspondente.
+              </p>
               {config.navbar.map((item, i) => (
                 <div key={i} className="flex gap-2">
                   <Input
@@ -257,12 +314,84 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   <Button variant="outline" size="sm" onClick={() => updateConfig({ navbar: config.navbar.filter((_, idx) => idx !== i) })}>✕</Button>
                 </div>
               ))}
-              <Button variant="outline" size="sm" onClick={() => updateConfig({ navbar: [...config.navbar, "Novo Item"] })}>+ Adicionar</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newName = "Nova Seção";
+                  const slug = slugify(newName);
+                  const sections = { ...config.customSections };
+                  if (!sections[slug]) {
+                    sections[slug] = { title: newName, description: "Descrição da seção", items: ["Item de exemplo"] };
+                  }
+                  updateConfig({ navbar: [...config.navbar, newName], customSections: sections });
+                }}
+              >
+                + Adicionar Menu
+              </Button>
             </div>
           )}
 
+          {/* Custom section tabs */}
+          {tab.startsWith("custom-") && (() => {
+            const slug = tab.replace("custom-", "");
+            const section = config.customSections?.[slug] || { title: "", description: "", items: [] };
+            return (
+              <SectionEditor
+                title={section.title || "Seção Personalizada"}
+                description={section.description}
+                items={section.items}
+                onDescChange={(v) => updateCustomSection(slug, "description", v)}
+                onItemChange={(i, v) => {
+                  const items = [...section.items];
+                  items[i] = v;
+                  updateCustomSection(slug, "items", items);
+                }}
+                onItemAdd={() => updateCustomSection(slug, "items", [...section.items, ""])}
+                onItemRemove={(i) => updateCustomSection(slug, "items", section.items.filter((_, idx) => idx !== i))}
+                showTitleEdit
+                onTitleChange={(v) => updateCustomSection(slug, "title", v)}
+              />
+            );
+          })()}
+
           {tab === "colors" && <ColorsTab config={config} updateConfig={updateConfig} />}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Section Editor ---
+function SectionEditor({
+  title, description, items,
+  onDescChange, onItemChange, onItemAdd, onItemRemove,
+  showTitleEdit, onTitleChange,
+}: {
+  title: string; description: string; items: string[];
+  onDescChange: (v: string) => void;
+  onItemChange: (i: number, v: string) => void;
+  onItemAdd: () => void;
+  onItemRemove: (i: number) => void;
+  showTitleEdit?: boolean;
+  onTitleChange?: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <h3 className="font-heading text-xl text-primary mb-4">{title}</h3>
+      {showTitleEdit && onTitleChange && (
+        <FieldInput label="Título da Seção" value={title} onChange={onTitleChange} />
+      )}
+      <FieldTextarea label="Descrição" value={description} onChange={onDescChange} />
+      <div>
+        <label className="font-body text-sm font-semibold text-foreground mb-2 block">Itens</label>
+        {items.map((item, i) => (
+          <div key={i} className="flex gap-2 mb-2">
+            <Input value={item} onChange={(e) => onItemChange(i, e.target.value)} className="flex-1" />
+            <Button variant="outline" size="sm" onClick={() => onItemRemove(i)}>✕</Button>
+          </div>
+        ))}
+        <Button variant="outline" size="sm" onClick={onItemAdd}>+ Adicionar Item</Button>
       </div>
     </div>
   );
@@ -276,22 +405,18 @@ function PhotoTab({ config, updateConfig }: { config: SiteConfig; updateConfig: 
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      updateConfig({ customPhoto: reader.result as string });
-    };
+    reader.onload = () => updateConfig({ customPhoto: reader.result as string });
     reader.readAsDataURL(file);
   };
 
   return (
     <div className="space-y-6">
       <h3 className="font-heading text-xl text-primary mb-4">Foto da Psicóloga</h3>
-      
       {config.customPhoto && (
         <div className="w-48 h-60 rounded-xl overflow-hidden shadow-md mx-auto">
           <img src={config.customPhoto} alt="Preview" className="w-full h-full object-cover" />
         </div>
       )}
-
       <div className="flex gap-3 justify-center">
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
         <Button onClick={() => fileRef.current?.click()}>
@@ -311,7 +436,6 @@ function PhotoTab({ config, updateConfig }: { config: SiteConfig; updateConfig: 
 // --- Colors Tab ---
 function ColorsTab({ config, updateConfig }: { config: SiteConfig; updateConfig: (p: Partial<SiteConfig>) => void }) {
   const colors = config.colors || defaultColors;
-
   const colorFields: { key: keyof SiteColors; label: string }[] = [
     { key: "primary", label: "Roxo Principal" },
     { key: "secondary", label: "Roxo Claro / Secundário" },
@@ -323,8 +447,7 @@ function ColorsTab({ config, updateConfig }: { config: SiteConfig; updateConfig:
   ];
 
   const updateColor = (key: keyof SiteColors, hex: string) => {
-    const hsl = hexToHsl(hex);
-    updateConfig({ colors: { ...colors, [key]: hsl } });
+    updateConfig({ colors: { ...colors, [key]: hexToHsl(hex) } });
   };
 
   return (
