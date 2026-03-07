@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { slugify } from "@/data/mockData";
 
 interface NavbarProps {
   items: string[];
@@ -8,10 +9,6 @@ interface NavbarProps {
 const sectionIds: Record<string, string> = {
   "Início": "inicio",
   "Quem Sou Eu": "sobre",
-  "Como Posso Te Ajudar": "sobre",
-  "Condições Atendidas": "trajetoria",
-  "Recursos Terapêuticos": "trajetoria",
-  "Conteúdos": "missao",
   "Contato": "contato",
 };
 
@@ -19,7 +16,7 @@ export default function Navbar({ items }: NavbarProps) {
   const [open, setOpen] = useState(false);
 
   const scrollTo = (item: string) => {
-    const id = sectionIds[item] || "inicio";
+    const id = sectionIds[item] || slugify(item);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setOpen(false);
   };
