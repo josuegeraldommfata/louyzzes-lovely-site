@@ -8,6 +8,12 @@ export interface SiteColors {
   cardForeground: string;
 }
 
+export interface CustomSection {
+  title: string;
+  description: string;
+  items: string[];
+}
+
 export interface SiteConfig {
   identity: {
     name: string;
@@ -23,6 +29,22 @@ export interface SiteConfig {
     card1Text: string;
     card2Title: string;
     card2Text: string;
+  };
+  comoAjudar: {
+    description: string;
+    items: string[];
+  };
+  condicoesAtendidas: {
+    description: string;
+    items: string[];
+  };
+  recursosTerapeuticos: {
+    description: string;
+    items: string[];
+  };
+  conteudos: {
+    description: string;
+    items: string[];
   };
   trajetoria: {
     aulas: string[];
@@ -43,6 +65,7 @@ export interface SiteConfig {
   };
   navbar: string[];
   colors: SiteColors;
+  customSections: Record<string, CustomSection>;
 }
 
 export const defaultColors: SiteColors = {
@@ -54,6 +77,26 @@ export const defaultColors: SiteColors = {
   card: "0 0% 100%",
   cardForeground: "0 0% 37%",
 };
+
+// Known navbar items that map to built-in sections
+export const builtInSections: string[] = [
+  "Início",
+  "Quem Sou Eu",
+  "Como Posso Te Ajudar",
+  "Condições Atendidas",
+  "Recursos Terapêuticos",
+  "Conteúdos",
+  "Contato",
+];
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
 
 export const defaultConfig: SiteConfig = {
   identity: {
@@ -69,10 +112,56 @@ export const defaultConfig: SiteConfig = {
   sobre: {
     card1Title: "Um pouco de mim",
     card1Text:
-      "Nasci e fui criada em Uberaba, Minas Gerais. Em 2016, movida pelo desejo de crescer profissionalmente, busquei oportunidades que me levaram a trilhar um caminho dedicado ao cuidado humano. A importância da escuta atenta e do acolhimento genuíno sempre guiaram minha trajetória, me levando a compreender que cada pessoa carrega uma história única que merece ser ouvida e respeitada.",
+      "Nasci e fui criada em Uberaba, Minas Gerais. Em 2016, movida pelo desejo de crescer profissionalmente, busquei oportunidades que me levaram a trilhar um caminho dedicado ao cuidado humano. A importância da escuta atenta e do acolhimento genuíno sempre guiaram minha trajetória.",
     card2Title: "Minha atuação profissional",
     card2Text:
-      "Psicóloga em saúde oncológica, doenças raras, saúde e profissionais que enfrentam desafios e familiares, profissionais que enfrentam momentos de crise, luto, esgotamento, saúde e mudanças significativas de vida. Experta em acompanhamento profissional focado em compreender os aspectos emocionais, psicológicos, empresas, de saúde, satisfação, doenças crônicas, raras, e também nos contextos que enfrentam de adoecimento, tratamento e luto.",
+      "Psicóloga em saúde oncológica, doenças raras, saúde e profissionais que enfrentam desafios e familiares, profissionais que enfrentam momentos de crise, luto, esgotamento, saúde e mudanças significativas de vida.",
+  },
+  comoAjudar: {
+    description:
+      "Ofereço acompanhamento psicológico para pessoas que enfrentam desafios significativos em diferentes momentos da vida. Meu trabalho é baseado em escuta qualificada, acolhimento e técnicas validadas cientificamente.",
+    items: [
+      "Acompanhamento individual para adultos",
+      "Suporte psicológico em processos de adoecimento",
+      "Apoio a familiares e cuidadores",
+      "Orientação para profissionais de saúde",
+      "Psicoterapia online e presencial",
+    ],
+  },
+  condicoesAtendidas: {
+    description:
+      "Atuo com diversas condições e contextos clínicos, sempre com foco na singularidade de cada pessoa e em seu processo de cuidado.",
+    items: [
+      "Doenças crônicas e raras",
+      "Oncologia e cuidados paliativos",
+      "Luto e perdas significativas",
+      "Ansiedade e depressão",
+      "Burnout e esgotamento profissional",
+      "Adaptação a mudanças de vida",
+      "Estresse pós-traumático",
+    ],
+  },
+  recursosTerapeuticos: {
+    description:
+      "Utilizo recursos terapêuticos baseados em evidências científicas, adaptados às necessidades de cada paciente.",
+    items: [
+      "Terapia Cognitivo-Comportamental (TCC)",
+      "Psicologia da Saúde",
+      "Intervenções em crise",
+      "Técnicas de mindfulness e relaxamento",
+      "Psicoeducação",
+      "Acolhimento e escuta qualificada",
+    ],
+  },
+  conteudos: {
+    description:
+      "Compartilho reflexões, informações e conteúdos sobre psicologia da saúde, bem-estar emocional e cuidado humano.",
+    items: [
+      "Artigos sobre saúde mental e bem-estar",
+      "Dicas de autocuidado emocional",
+      "Reflexões sobre o processo terapêutico",
+      "Conteúdos sobre doenças crônicas e saúde",
+    ],
   },
   trajetoria: {
     aulas: [
@@ -80,7 +169,7 @@ export const defaultConfig: SiteConfig = {
       "Temas de Cuidado",
     ],
     palestras: [
-      "Palestras, apresentações, saúde em Psicologia em saúde",
+      "Palestras e apresentações em Psicologia da Saúde",
       "Trajetos em cuidado, idoso, paciente crônico",
     ],
     publicacoes: [
@@ -89,9 +178,9 @@ export const defaultConfig: SiteConfig = {
       "Catálogos de eventos e artigos",
     ],
     experiencias: [
-      "Atividades clínicas, pesquisas, supervisões, experiências",
+      "Atividades clínicas, pesquisas, supervisões",
       "Supervisão de outros psicólogos",
-      "Senolabilidade na manicação e ações sociais",
+      "Sensibilidade na comunicação e ações sociais",
     ],
   },
   missaoVisaoValores: {
@@ -123,4 +212,5 @@ export const defaultConfig: SiteConfig = {
     "Contato",
   ],
   colors: { ...defaultColors },
+  customSections: {},
 };
