@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { SiteConfig, defaultConfig } from "@/data/mockData";
-
-const STORAGE_KEY = "siteConfig";
+import { fetchConfig, saveConfig, resetConfig as resetConfigApi } from "@/services/api";
 
 function applyColors(colors: SiteConfig["colors"]) {
   const root = document.documentElement;
@@ -18,33 +17,64 @@ function applyColors(colors: SiteConfig["colors"]) {
 }
 
 export function useSiteConfig() {
-  const [config, setConfig] = useState<SiteConfig>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) return { ...defaultConfig, ...JSON.parse(stored) };
-    } catch {}
-    return defaultConfig;
-  });
+  const [config, setConfig] = useState<SiteConfig>(defaultConfig);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+
+  // Carregar config do backend - SEM MOCK
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-    if (config.colors) applyColors(config.colors);
+    fetchConfig()
+      .then((data) => {
+        setConfig(data.config);
+        if (data.config.colors) applyColors(data.config.colors);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Erro backend:', err);
+        setLoading(false);
+      });
+  }, []);
+
+
+  // Salvar no backend quando config mudar (debounce 1s)
+  useEffect(() => {
+    if (loading) return;
+
+    const timeout = setTimeout(() => {
+      saveConfig(config).catch((err) => {
+        console.error('Erro ao salvar config:', err);
+      });
+    }, 1000);
+
+    return () => clearTimeout(timeout);
   }, [config]);
 
-  // Apply colors on mount
+  // Aplicar cores sempre que mudarem
   useEffect(() => {
     if (config.colors) applyColors(config.colors);
-  }, []);
+  }, [config.colors]);
 
   const updateConfig = useCallback((partial: Partial<SiteConfig>) => {
     setConfig((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  const resetConfig = useCallback(() => {
-    setConfig(defaultConfig);
-    localStorage.removeItem(STORAGE_KEY);
-    applyColors(defaultConfig.colors);
+  const resetConfig = useCallback(async () => {
+    try {
+      await resetConfigApi();
+      setConfig(defaultConfig);
+      applyColors(defaultConfig.colors);
+    } catch (err) {
+      console.error('Erro ao resetar:', err);
+    }
   }, []);
 
-  return { config, updateConfig, resetConfig };
+  return {
+    config,
+    updateConfig,
+    resetConfig,
+    loading,
+    error
+  };
 }
+

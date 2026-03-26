@@ -1,0 +1,201 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String   @id @default(cuid())
+  email    String   @unique
+  username String   @unique
+  password String
+  role     String   @default("admin")
+  createdAt DateTime @default(now())
+
+  @@map("users")
+}
+
+model Site {
+  id          String   @id @default("default-site")
+  updatedAt   DateTime @updatedAt
+
+  identity    Identity?
+  hero        Hero?
+  photo       SitePhoto?
+  sobre       Sobre?
+  missaoVisao MissaoVisaoValores?
+  contato     Contato?
+
+  sections    Section[]
+  trajetoria  TrajetoriaItem[]
+  navbarItems NavbarItem[]
+  colors      Json         @default("{}")
+
+  customSections CustomSection[]
+
+  @@map("sites")
+}
+
+model Identity {
+  id      String @id @default(cuid())
+  name    String
+  subtitle String
+  crp     String
+
+  siteId  String @unique
+  site    Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("identities")
+}
+
+model Hero {
+  id          String @id @default(cuid())
+  description String @db.Text
+
+  siteId      String @unique
+  site        Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("heroes")
+}
+
+model SitePhoto {
+  id     String @id @default(cuid())
+  photo  String? // base64
+
+  siteId String @unique
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("site_photos")
+}
+
+model Sobre {
+  id              String @id @default(cuid())
+  card1Title      String
+  card1Text       String @db.Text
+  card2Title      String
+  card2Text       String @db.Text
+
+  siteId          String @unique
+  site            Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("sobes")
+}
+
+model MissaoVisaoValores {
+  id      String @id @default(cuid())
+  missao  String @db.Text
+  visao   String @db.Text
+  siteId  String @unique
+  site    Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  valores Valor[]
+
+  @@map("missoes_visoes_valores")
+}
+
+model Valor {
+  id     String @id @default(cuid())
+  value  String
+
+  missaoVisaoId String
+  missaoVisao   MissaoVisaoValores @relation(fields: [missaoVisaoId], references: [id], onDelete: Cascade)
+
+  @@map("valores")
+}
+
+model Contato {
+  id        String @id @default(cuid())
+  email     String
+  telefone  String
+  instagram String?
+  linkedin  String?
+
+  siteId    String @unique
+  site      Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("contatos")
+}
+
+model NavbarItem {
+  id     String @id @default(cuid())
+  title  String
+
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id])
+
+  @@map("navbar_items")
+}
+
+enum SectionType {
+  COMO_AJUDAR
+  CONDICOES_ATENDIDAS
+  RECURSOS_TERAPEUTICOS
+  CONTEUDOS
+}
+
+model Section {
+  id          String      @id @default(cuid())
+  type        SectionType
+  description String?     @db.Text
+
+  siteId      String
+  site        Site        @relation(fields: [siteId], references: [id])
+
+  items       SectionItem[]
+
+  @@unique([siteId, type])
+  @@map("sections")
+}
+
+model SectionItem {
+  id      String @id @default(cuid())
+  content String
+
+  sectionId String
+  section   Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@map("section_items")
+}
+
+model TrajetoriaItem {
+  id       String @id @default(cuid())
+  content  String
+  category String // "aulas", "palestras", etc.
+
+  siteId   String
+  site     Site   @relation(fields: [siteId], references: [id])
+
+  @@map("trajetoria_items")
+}
+
+model CustomSection {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String?  @db.Text
+
+  siteId      String
+  site        Site     @relation(fields: [siteId], references: [id])
+
+  items       CustomSectionItem[]
+
+  @@map("custom_sections")
+}
+
+model CustomSectionItem {
+  id              String       @id @default(cuid())
+  content         String
+  customSectionId String
+  customSection   CustomSection @relation(fields: [customSectionId], references: [id], onDelete: Cascade)
+
+  @@map("custom_section_items")
+}
+
+// Seed data será inserido via migration
+

@@ -19,7 +19,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar items={config.navbar} />
-      
+
       {/* Render sections based on navbar order */}
       {config.navbar.map((item, idx) => {
         switch (item) {
@@ -131,13 +131,16 @@ const Index = () => {
       )}
 
       <Footer
-        email={config.contato.email}
-        telefone={config.contato.telefone}
-        instagram={config.contato.instagram}
-        linkedin={config.contato.linkedin}
-        name={config.identity.name}
+        email={config.contato?.email || 'contato@example.com'}
+        telefone={config.contato?.telefone || '(34) 99999-9999'}
+        instagram={config.contato?.instagram || '@louyzzemedrado'}
+        linkedin={config.contato?.linkedin || 'louyzze-medrado'}
+
+        name={config.identity?.name || 'Louyzze Medrado'}
       />
+
     </div>
+
   );
 };
 
