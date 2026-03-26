@@ -14,8 +14,8 @@ export default function Admin() {
   const [loginError, setLoginError] = useState("");
 
   const handleLogin = () => {
-    if (user === "admin" && pass === "admin123") setAuthenticated(true);
-    else setLoginError("Credenciais inválidas");
+    if (user.trim() === "admin" && pass.trim() === "admin123") setAuthenticated(true);
+    else setLoginError("Credenciais inválidas. Use: admin / admin123");
   };
 
   if (!authenticated) {
